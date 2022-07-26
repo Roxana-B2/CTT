@@ -220,9 +220,9 @@ int main ()
   **/
   
   PID pid_steer = PID();
-  double steer_p = 0.25;
-  double steer_d = 0.72; // 0.03
-  double steer_i = 0.02; // 0.015
+  double steer_p = 0.45;
+  double steer_d = 0.3;
+  double steer_i = 0.0001; 
   double steer_mini = -1.2;
   double steer_maxi = 1.2;
   pid_steer.Init(steer_p, steer_i, steer_d, steer_maxi, steer_mini);
@@ -236,9 +236,9 @@ int main ()
   // PID pid_throttle = PID();
   
   PID pid_throttle = PID();
-  double thro_p = 0.19;
-  double thro_d = 0.038;
-  double thro_i = 0.001;
+  double thro_p = 0.225;
+  double thro_d = 0.035;
+  double thro_i = 0.0001;
   double thr_mini = -1.0;
   double thr_maxi = 1.0;
   pid_throttle.Init(thro_p, thro_i, thro_d, thr_maxi, thr_mini);
@@ -329,7 +329,28 @@ int main ()
               min_i = i;
             }
           }
-          error_steer = angle_between_points(x_position,y_position,x_points[min_i],y_points[min_i]) - yaw;
+          // look ahead
+          double count = 0.0;
+          double avg_x = 0;
+          double avg_y = 0;
+          for (int i=0; (min_i+i<x_points.size())&&(i<20); ++i) 
+          {
+              count++;
+              avg_x+=x_points[min_i+i];
+              avg_y+=y_points[min_i+i];
+          }
+          avg_x = avg_x/count;
+          avg_y = avg_y/count;
+
+          cout << "Trajectory: " << x_points.size() << "  " << x_points[x_points.size()-1] << "/" << y_points[x_points.size()-1] << endl;          
+          cout << "Planned point: " << avg_x << "/" << avg_y << endl;
+          //error_steer = angle_between_points(x_position,y_position,x_points[min_i],y_points[min_i]) - yaw;
+          //error_steer = angle_between_points(x_position,y_position,(x_points[min_i]+x_points[x_points.size()-1])/2,(y_points[min_i]+y_points[y_points.size()-1])/2) - yaw;
+          //double yaw_plan = angle_between_points(x_position,y_position,avg_x, avg_y);
+          double yaw_plan = angle_between_points(x_position,y_position,x_points[x_points.size()-1], y_points[y_points.size()-1]);
+          yaw_plan = yaw_plan > M_PI / 2 ? M_PI / 2 : yaw_plan;
+          yaw_plan = yaw_plan < -M_PI / 2 ? -M_PI / 2 : yaw_plan;
+          error_steer = yaw_plan - yaw;
           
 
           /**
